@@ -1228,10 +1228,30 @@ mod contract_tests {
         let set = Atom::solve(&[&y - &original])
             .wrt(std::slice::from_ref(&y))
             .unwrap();
-        assert_complete_pole_conditions(
-            &set,
-            &[parse!("a"), parse!("1+a"), parse!("b"), parse!("1+b")],
-        );
+        assert_eq!(set.coverage(), SolveCoverage::Complete);
+        assert!(set.coverage_guard().is_empty());
+        assert_eq!(set.len(), 1);
+        assert!(set[0].free_variables().is_empty());
+        let poles = [parse!("a"), parse!("1+a"), parse!("b"), parse!("1+b")];
+        for pole in &poles {
+            assert!(
+                set[0]
+                    .conditions()
+                    .contains(&SolutionCondition::NonZero(pole.clone()))
+            );
+        }
+        // Conditions need not be irredundant. This product is nonzero under
+        // the required original poles; an unrelated extra guard is not allowed.
+        let product = parse!("(1+a)*(1+b)");
+        let allowed = |condition: &SolutionCondition| match condition {
+            SolutionCondition::NonZero(value) => {
+                poles.contains(value) || (value - &product).expand().together().cancel().is_zero()
+            }
+            _ => false,
+        };
+        assert!(!allowed(&SolutionCondition::NonZero(parse!("a-2"))));
+        assert!(!allowed(&SolutionCondition::Zero(parse!("a"))));
+        assert!(set[0].conditions().iter().all(allowed));
         let actual = set[0].get(&y.try_into().unwrap()).unwrap();
         assert!(
             (actual - parse!("a*b/((1+a)*(1+b))"))
