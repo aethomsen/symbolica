@@ -1276,7 +1276,7 @@ mod contract_tests {
         assert!(set.coverage_guard().is_empty());
         assert_eq!(set.len(), 1);
         assert!(set[0].coordinates().is_empty());
-        assert_eq!(set[0].free_variables(), &[y.try_into().unwrap()]);
+        assert_eq!(set[0].free_variables(), &[PolyVariable::try_from(y).unwrap()]);
         assert_eq!(set[0].conditions().len(), 2);
         for pole in [parse!("a"), parse!("1+a")] {
             assert!(
